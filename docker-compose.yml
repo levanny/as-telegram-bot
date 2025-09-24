@@ -3,7 +3,7 @@ version: "3.9"
 services:
   tokosjarvis-bot:
     build: .
-    container_name: tokosjarvis-bot
+    container_name: as-telegram-bot
     env_file:
       - .env
     restart: unless-stopped
