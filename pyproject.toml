@@ -1,0 +1,11 @@
+[project]
+name = "telegram-bot"
+version = "0.1.0"
+description = "A simple Telegram bot using aiogram"
+requires-python = ">=3.12"
+
+dependencies = [
+    "aiogram>=3.0.0",
+    "python-dotenv",
+]
+
