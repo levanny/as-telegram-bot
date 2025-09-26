@@ -1,9 +1,21 @@
 version: "3.9"
 
 services:
-  tokosjarvis-bot:
+  as-telegram-bot:
     build: .
-    container_name: as-telegram-bot
     env_file:
       - .env
+    depends_on:
+      - db
     restart: unless-stopped
+
+  db:
+    image: postgres:15
+    env_file:
+      - .env
+    volumes:
+      - db_data:/var/lib/postgres/data
+    restart: unless-stopped
+
+volumes:
+  db_data:
