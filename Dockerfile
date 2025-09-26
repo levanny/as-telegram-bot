@@ -4,9 +4,9 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN uv sync --locked --no-install-project
 
-COPY ./bot.py ./bot.py
+COPY ./app ./app
 RUN uv sync --locked
 
 ENV PATH="/app/.venv/bin:$PATH"
 
-CMD ["python", "bot.py"]
+CMD ["python", "app/bot.py"]

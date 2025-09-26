@@ -37,21 +37,8 @@ async def help_command(message:types.Message):
         "- What needs to be repaired?"
     )
 
-@dp.message()
-async def qa_handler(message: types.Message):
-    text = message.text.lower()
 
-    if "next service" in text:
-        answer = "Your next service is scheduled in 10 days."
-    elif "service cost" in text:
-        answer = "The estimated service cost is $250."
-    elif "needs to be repaired" in text:
-        answer = "Your car needs oil change and brake inspection."
-    else:
-        answer = "Sorry, I don't understand. Try /help for commands."
 
-    logging.info(f"Received message: {message.text} from {message.from_user.id}")
-    await message.answer(answer)
 
 # Respond to any message
 @dp.message()
