@@ -12,5 +12,6 @@ RUN uv sync --locked
 
 
 ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH=/app
 
 CMD ["python", "app/bot.py"]
