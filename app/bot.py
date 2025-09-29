@@ -7,7 +7,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
-from database import SessionLocal, engine, Base
+from database.models import SessionLocal, engine, Base
 from database.models import Car
 
 logging.basicConfig(level=logging.INFO)
