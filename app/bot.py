@@ -4,6 +4,12 @@ from aiogram.filters import Command
 import os
 from dotenv import load_dotenv
 import logging
+from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+
+from database import SessionLocal, engine, Base
+from database.models import Car
 
 logging.basicConfig(level=logging.INFO)
 
@@ -16,13 +22,13 @@ if not TOKEN:
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-#/start command
-@dp.message(Command("start"))
-async def start_command(message: types.Message):
-    await message.answer(
-        "Hello! 👋 I am your Car Service Bot.\n"
-        "You can ask me about your car's status or use /help to see commands."
-    )
+class CarState(StatesGroup):
+    model = State()
+    year = State()
+    arrival_time = State()
+    departure_time = State()
+    price_range = State()
+    phone_number = State()
 
 #/help command
 @dp.message(Command("help"))
@@ -36,9 +42,6 @@ async def help_command(message:types.Message):
         "- What is the service cost?\n"
         "- What needs to be repaired?"
     )
-
-
-
 
 # Respond to any message
 @dp.message()
@@ -56,6 +59,55 @@ async def start_command(message: types.Message):
 async def main():
     print("Bot is starting...")
     await dp.start_polling(bot)
+
+@dp.message(Command("add_car"))
+async def cmd_add_car(message: types.Message, state: FSMContext):
+    await message.answer("Enter car model:")
+    await state.set_state(CarState.model)
+
+@dp.message(CarState.model)
+async def process_model(message: types.Message, state: FSMContext):
+    await state.update_data(model=message.text)
+    await message.answer("Enter car year:")
+    await state.set_state(CarState.year)
+
+@dp.message(CarState.year)
+async def process_year(message: types.Message, state: FSMContext):
+    await state.update_data(year=int(message.text))
+    await message.answer("Enter arrival time:")
+    await state.set_state(CarState.arrival_time)
+
+@dp.message(CarState.arrival_time)
+async def process_arrival(message: types.Message, state: FSMContext):
+    await state.update_data(arrival_time=int(message.text))
+    await message.answer("Enter departure time:")
+    await state.set_state(CarState.departure_time)
+
+@dp.message(CarState.departure_time)
+async def process_departure(message: types.Message, state: FSMContext):
+    await state.update_data(departure_time=int(message.text))
+    await message.answer("Enter price range:")
+    await state.set_state(CarState.price_range)
+
+@dp.message(CarState.price_range)
+async def process_price(message: types.Message, state: FSMContext):
+    await state.update_data(price_range=message.text)
+    await message.answer("Enter contact phone number:")
+    await state.set_state(CarState.phone_number)
+
+@dp.message(CarState.phone_number)
+async def process_phone(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    data["phone_number"] = message.text
+
+    # Save to DB
+    async with SessionLocal() as session:
+        new_car = Car(**data)
+        session.add(new_car)
+        await session.commit()
+
+    await message.answer("Car added successfully!")
+    await state.clear()
 
 if __name__ == "__main__":
     asyncio.run(main())
