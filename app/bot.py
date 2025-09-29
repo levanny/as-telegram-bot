@@ -1,6 +1,5 @@
 import asyncio
 from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command
 import os
 from dotenv import load_dotenv
 import logging
@@ -67,7 +66,12 @@ async def cmd_add_car(message: types.Message, state: FSMContext):
 
 @dp.message(CarState.model)
 async def process_model(message: types.Message, state: FSMContext):
-    await state.update_data(model=message.text)
+    try:
+        year = int(message.text)
+    except ValueError:
+        await message.answer("Please enter a valid number for the year.")
+        return
+    await state.update_data(year=year)
     await message.answer("Enter car year:")
     await state.set_state(CarState.year)
 
@@ -106,7 +110,7 @@ async def process_phone(message: types.Message, state: FSMContext):
         session.add(new_car)
         await session.commit()
 
-    await message.answer("Car added successfully!")
+    await message.answer(f"Car added successfully!\nModel: {data['model']}, Year: {data['year']}")
     await state.clear()
 
 if __name__ == "__main__":
