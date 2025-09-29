@@ -24,8 +24,8 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("model", sa.String(length=50), nullable=False),
         sa.Column("year", sa.Integer(), nullable=False),
-        sa.Column("arrival_time", sa.Integer(), nullable=False),
-        sa.Column("departure_time", sa.Integer(), nullable=False),
+        sa.Column("arrival_time", sa.String(length=50), nullable=False),
+        sa.Column("departure_time", sa.String(length=50), nullable=False),
         sa.Column("price_range", sa.String(length=50), nullable=False),
         sa.Column("phone_number", sa.String(length=50), nullable=False),
         sa.PrimaryKeyConstraint("id")
