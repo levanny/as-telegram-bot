@@ -4,10 +4,16 @@ services:
   as-telegram-bot:
     build: .
     env_file:
-      - .env
+      - .env.docker
     depends_on:
       - db
+    command: >
+      sh -c "
+        alembic upgrade head &&
+        python app/bot.py
+      "
     restart: unless-stopped
+
 
   db:
     image: postgres:15
@@ -16,7 +22,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - db_data:/var/lib/postgres/data
+      - db_data:/var/lib/postgresql/data
     restart: unless-stopped
 
 volumes:
