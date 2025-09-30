@@ -24,3 +24,4 @@ class Car(Base):
     departure_time: Mapped[str] = mapped_column(String(50))
     price_range: Mapped[str] = mapped_column(String(50))
     phone_number: Mapped[str] = mapped_column(String(50))
+    photo_file_id: Mapped[str] = mapped_column(String(255), nullable=True)
