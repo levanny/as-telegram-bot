@@ -21,6 +21,11 @@ if not TOKEN:
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
+class EditCarState(StatesGroup):
+    waiting_for_id = State()
+    waiting_for_field = State()
+    waiting_for_value = State()
+
 class CarState(StatesGroup):
     id = State()
     model = State()
@@ -152,6 +157,51 @@ async def list_cars(message: types.Message):
         )
 
     await message.answer(reply)
+
+# /edit command
+@dp.message(Command("edit"))
+async def cmd_edit(message: types.Message, state: FSMContext):
+    await message.answer("ჩაწერეთ იმ მანქანის ID, რომლის შეცვლაც გსურთ:")
+    await state.set_state(EditCarState.waiting_for_id)
+
+@dp.message(EditCarState.waiting_for_id)
+async def edit_get_id(message: types.Message, state:FSMContext):
+    try:
+        car_id = int(message.text)
+    except ValueError:
+        await message.answer("❌ გთხოვთ, ჩაწეროთ მხოლოდ რიცხვი (მაგალითად: 2).")
+        return
+
+    async with SessionLocal() as session:
+        result = await session.execute(select(Car).where(Car.id == car_id))
+        car = result.scalar_one_or_none()
+
+    if not car:
+        await message.answer("❌ მანქანა ვერ მოიძებნა ამ ID-ით.")
+        await state.clear()
+        return
+
+    await state.update_data(car_id=car_id)
+    await message.answer(
+        "რომელი ველის შეცვლა გსურთ?\n"
+        "აირჩიეთ: model, year, arrival_time, departure_time, price_range, phone_number"
+    )
+    await state.set_state(EditCarState.waiting_for_field)
+
+
+# Step 2: get field name
+@dp.message(EditCarState.waiting_for_field)
+async def edit_get_field(message: types.Message, state: FSMContext):
+    field = message.text.strip()
+    valid_fields = {"model", "year", "arrival_time", "departure_time", "price_range", "phone_number"}
+
+    if field not in valid_fields:
+        await message.answer("❌ ველი არასწორია. სცადეთ თავიდან.")
+        return
+
+    await state.update_data(field=field)
+    await message.answer(f"ჩაწერეთ ახალი მნიშვნელობა ველისთვის: {field}")
+    await state.set_state(EditCarState.waiting_for_value)
 
 # Run the bot
 async def main():
