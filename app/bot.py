@@ -22,6 +22,7 @@ bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 class CarState(StatesGroup):
+    id = State()
     model = State()
     year = State()
     arrival_time = State()
@@ -140,6 +141,7 @@ async def list_cars(message: types.Message):
     reply = ""
     for car in cars:
         reply += (
+            f"ID: {car.id}\n"
             f"მოდელი: {car.model}\n"
             f"წელი: {car.year}\n"
             f"მოსვლა: {car.arrival_time}\n"
