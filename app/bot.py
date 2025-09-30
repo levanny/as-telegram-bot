@@ -105,12 +105,11 @@ async def process_price(message: types.Message, state: FSMContext):
 @dp.message(CarState.phone_number)
 async def process_phone(message: types.Message, state: FSMContext):
     cleaned_text = message.text.replace(" ", "")
-    cleaned_text = message.text.replace(" ", "")
 
     # Keep asking until valid
     if not cleaned_text.isdigit():
         await message.answer("გთხოვთ, ჩაწეროთ მხოლოდ ციფრები მაგალითად: 510 100 500.")
-        return  # State remains CarState.phone_number
+        return
 
     data = await state.get_data()
     data["phone_number"] = message.text
@@ -202,6 +201,35 @@ async def edit_get_field(message: types.Message, state: FSMContext):
     await state.update_data(field=field)
     await message.answer(f"ჩაწერეთ ახალი მნიშვნელობა ველისთვის: {field}")
     await state.set_state(EditCarState.waiting_for_value)
+
+# Step 3: save new value
+@dp.message(EditCarState.waiting_for_value)
+async def edit_save_value(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    car_id = data["car_id"]
+    field = data["field"]
+    new_value = message.text.strip()
+
+    # numeric fields -> cast to int
+    if field in {"year"}:
+        try:
+            new_value = int(new_value)
+        except ValueError:
+            await message.answer("❌ ეს ველი უნდა იყოს რიცხვი.")
+            await state.clear()
+            return
+
+    async with SessionLocal() as session:
+        result = await session.execute(select(Car).where(Car.id == car_id))
+        car = result.scalar_one_or_none()
+
+        if not car:
+            await message.answer("მანქანა ვერ მოიძებნა ბაზაში!")
+            await state.clear()
+            return
+
+        setattr(car, field, new_value)
+        await session.commit()
 
 # Run the bot
 async def main():
