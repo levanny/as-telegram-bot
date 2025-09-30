@@ -34,6 +34,7 @@ class CarState(StatesGroup):
     departure_time = State()
     price_range = State()
     phone_number = State()
+    photo = State()
 
 # /help command
 @dp.message(Command("help"))
