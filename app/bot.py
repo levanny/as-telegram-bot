@@ -77,16 +77,19 @@ async def process_year(message: types.Message, state: FSMContext):
     except ValueError:
         await message.answer("გთხოვთ, ჩაწეროთ მხოლოდ გამოშვების წლის რიცხვი, მაგალითად - 2025.")
         return
+    if year <= 1900 or year > 2026:
+        await message.answer("გთხოვთ შეიყვანოთ რეალური მანქნანის გამოშვების წელი")
+        return
     await state.update_data(year=year)
     await state.set_state(CarState.arrival_time)
-    await message.answer("ჩაწერეთ მოსვლის დრო:")
+    await message.answer("ჩაწერეთ მოყვანის თარიღი:")
 
 # Process arrival time
 @dp.message(CarState.arrival_time)
 async def process_arrival(message: types.Message, state: FSMContext):
     await state.update_data(arrival_time=message.text)
     await state.set_state(CarState.departure_time)
-    await message.answer("ჩაწერეთ გასვლის დრო:")
+    await message.answer("ჩაწერეთ გატანების თარიღი:")
 
 # Process departure time
 @dp.message(CarState.departure_time)
@@ -240,11 +243,19 @@ async def edit_save_value(message: types.Message, state: FSMContext):
             return
 
         setattr(car, field, new_value)
-        await session.commit()
+        if EditCarState.waiting_for_value:
+            await message.answer(f"თქვენ წარმატებით შეცვალეთ მნიშვნელობა ველში {field}")
+            await session.commit()
+        else:
+            await message.answer(f"შეცდომა მოხდა მონაცემის ცვლილებისას, სცადეთ ხელახლდა")
+
+
+
+''' DELETE FUNCTION '''
+
 
 # Run the bot
 async def main():
-    print("ბოტი იწყება...")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
