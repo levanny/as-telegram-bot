@@ -106,16 +106,22 @@ async def process_price(message: types.Message, state: FSMContext):
 @dp.message(CarState.phone_number)
 async def process_phone(message: types.Message, state: FSMContext):
     cleaned_text = message.text.replace(" ", "")
-
-    # Keep asking until valid
     if not cleaned_text.isdigit():
         await message.answer("გთხოვთ, ჩაწეროთ მხოლოდ ციფრები მაგალითად: 510 100 500.")
         return
+    await state.update_data(phone_number=message.text)
+    await message.answer("გთხოვთ ატვირთოთ მანქანის ფოტო 📸")
+    await state.set_state(CarState.photo)
+
+@dp.message(CarState.photo)
+async def process_photo(message: types.Message, state: FSMContext):
+    if not message.photo:
+        await message.answer("გთხოვთ ატვირთოთ ფოტო 📸.")
+        return
+    photo = message.photo[-1]
+    await state.update_data(photo_file_id=photo.file_id)
 
     data = await state.get_data()
-    data["phone_number"] = message.text
-
-    # Save to DB
     async with SessionLocal() as session:
         new_car = Car(**data)
         session.add(new_car)
@@ -125,10 +131,11 @@ async def process_phone(message: types.Message, state: FSMContext):
         f"მანქანა წარმატებით დამატებულია!\n"
         f"მოდელი: {data['model']}\n"
         f"წელი: {data['year']}\n"
-        f"მოსვლა: {data['arrival_time']}\n"
-        f"გასვლა: {data['departure_time']}\n"
-        f"ფასი: {data['price_range']}\n"
-        f"ტელეფონი: {data['phone_number']}"
+        f"მოყვანის თარიღი: {data['arrival_time']}\n"
+        f"გატანების თარიღი: {data['departure_time']}\n"
+        f"საორიენტაციო ფასი: {data['price_range']}\n"
+        f"ტელეფონის ნომერი: {data['phone_number']}\n"
+        f"ფოტო ატვირთულია ✅"
     )
     await state.clear()
 
@@ -143,20 +150,23 @@ async def list_cars(message: types.Message):
         await message.answer("მანქანები ჯერ არ დამატებულა!")
         return
 
-    reply = ""
     for car in cars:
-        reply += (
+        car_info = (
             f"ID: {car.id}\n"
             f"მოდელი: {car.model}\n"
             f"წელი: {car.year}\n"
-            f"მოსვლა: {car.arrival_time}\n"
-            f"გასვლა: {car.departure_time}\n"
-            f"ფასი: {car.price_range}\n"
-            f"ტელეფონი: {car.phone_number}\n"
+            f"მოყვანის თარიღი: {car.arrival_time}\n"
+            f"გატანების თარიღი: {car.departure_time}\n"
+            f"საორიენტაციო ფასი: {car.price_range}\n"
+            f"ტელეფონის ნომერი: {car.phone_number}\n"
             "--------------------\n"
         )
 
-    await message.answer(reply)
+        if car.photo_file_id:
+            await message.answer_photo(photo=car.photo_file_id, caption=car_info)
+        else:
+            await message.answer(car_info)
+
 
 # /edit command
 @dp.message(Command("edit"))
