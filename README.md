@@ -13,7 +13,7 @@ A simple Telegram bot that answers basic car service questions.
 git clone https://github.com/levanny/as-telegram-bot
 cd as-telegram-bot
 
-Create a .env file in the project root and add your bot token:
+Create a .env & .env.docker files in the project root and add your bot token, database url, password, username:
 BOT_TOKEN=YOUR_TELEGRAM_BOT_TOKEN
 
 Install dependencies:
