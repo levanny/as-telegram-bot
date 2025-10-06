@@ -46,11 +46,20 @@ class CarState(StatesGroup):
 
 # Generate calendar for a given month
 def generate_calendar(year:int, month:int):
+
     cal = calendar.Calendar(firstweekday=0)
     month_days = cal.monthdatescalendar(year, month)
 
     keyboard = []
     week_days = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
+
+    current_month = date(year, month, 1).strftime("%B %Y")
+    keyboard.append([
+        types.InlineKeyboardButton(
+            text=current_month,
+            callback_data="ignore"  # non-clickable
+        )
+    ])
 
     keyboard.append([
         types.InlineKeyboardButton(text=day, callback_data="ignore")
@@ -295,7 +304,8 @@ async def edit_save_value(message: types.Message, state: FSMContext):
         else:
             await message.answer(f"შეცდომა მოხდა მონაცემის ცვლილებისას, სცადეთ ხელახლდა")
 
-@router.message(Command("calendar"))
+# @router.message(Command("calendar"))
+@dp.message(Command("calendar"))
 async def start_calendar(message: types.Message, state:FSMContext):
     today = date.today()
     await message.answer("აირჩიეთ მოყვანის თარიღი:",
@@ -303,9 +313,9 @@ async def start_calendar(message: types.Message, state:FSMContext):
     await state.set_state(DateRange.picking_start)
 
 #Handle date clicks
-@router.callback_query(F.data.startswith("pick:"))
+@dp.callback_query(F.data.startswith("pick:"))
 async def handle_date(callback: types.CallbackQuery, state: FSMContext):
-    picked = date.isoformat(callback.data.split(":")[1])
+    picked = date.fromisoformat(callback.data.split(":")[1])
     current_state = await state.get_state()
     if current_state == DateRange.picking_start:
         await state.update_data(start=picked.isoformat())
@@ -318,15 +328,22 @@ async def handle_date(callback: types.CallbackQuery, state: FSMContext):
     elif current_state == DateRange.picking_end:
         await state.update_data(end=picked.isoformat())
         data = await state.get_data()
+
+        start_date = date.fromisoformat(data['start'])
+        end_date = date.fromisoformat(data['end'])
+        if data['start'] > data['end']:
+            temp = end_date
+            end_date = start_date
+            start_date = temp
         await callback.message.edit_text(
-            f"შენ აირჩიე დიაპაზონი:\n{data['start']} ➝ {data['end']}"
+            f"შენ აირჩიე დიაპაზონი:\n{start_date} ➝ {end_date}"
         )
         await state.clear()
 
     await callback.answer()
 
 #Handle navigation
-@router.callback_query(F.data.startswith("nav:"))
+@dp.callback_query(F.data.startswith("nav:"))
 async def handle_nav(callback: types.CallbackQuery):
     new_month = date.fromisoformat(callback.data.split(":")[1])
     today = date.today()
