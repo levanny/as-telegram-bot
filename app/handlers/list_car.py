@@ -1,15 +1,14 @@
-from aiogram import Dispatcher, types
+from aiogram import Router, types
 from aiogram.filters import Command
 from sqlalchemy import select
 
-from app.database.models import Car, SessionLocal
+from database.models import Car, SessionLocal
 
-dp = Dispatcher()
-
+router = Router()
 
 
 # List all cars
-@dp.message(Command("list"))
+@router.message(Command("list"))
 async def list_cars(message: types.Message):
     async with SessionLocal() as session:
         result = await session.execute(select(Car))

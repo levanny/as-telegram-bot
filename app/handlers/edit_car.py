@@ -1,24 +1,21 @@
-from aiogram import Dispatcher, types
+from aiogram import Router, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import create_async_engine
 
-from app.database.models import DATABASE_URL, Car, SessionLocal
+from database.models import Car, SessionLocal
 from app.states import EditCarState
 
-dp = Dispatcher()
-
-engine = create_async_engine(DATABASE_URL, echo=True)
+router = Router()
 
 
 
-@dp.message(Command("edit"))
+@router.message(Command("edit"))
 async def cmd_edit(message: types.Message, state: FSMContext):
     await message.answer("ჩაწერეთ იმ მანქანის ID, რომლის შეცვლაც გსურთ:")
     await state.set_state(EditCarState.waiting_for_id)
 
-@dp.message(EditCarState.waiting_for_id)
+@router.message(EditCarState.waiting_for_id)
 async def edit_get_id(message: types.Message, state:FSMContext):
     try:
         car_id = int(message.text)
@@ -43,7 +40,7 @@ async def edit_get_id(message: types.Message, state:FSMContext):
     await state.set_state(EditCarState.waiting_for_field)
 
 # Step 2: get field name
-@dp.message(EditCarState.waiting_for_field)
+@router.message(EditCarState.waiting_for_field)
 async def edit_get_field(message: types.Message, state: FSMContext):
     field = message.text.strip()
     valid_fields = {"model", "year", "arrival_time", "departure_time", "price_range", "phone_number"}
@@ -57,7 +54,7 @@ async def edit_get_field(message: types.Message, state: FSMContext):
     await state.set_state(EditCarState.waiting_for_value)
 
 # Step 3: save new value
-@dp.message(EditCarState.waiting_for_value)
+@router.message(EditCarState.waiting_for_value)
 async def edit_save_value(message: types.Message, state: FSMContext):
     data = await state.get_data()
     car_id = data["car_id"]
@@ -83,8 +80,4 @@ async def edit_save_value(message: types.Message, state: FSMContext):
             return
 
         setattr(car, field, new_value)
-        if EditCarState.waiting_for_value:
-            await message.answer(f"თქვენ წარმატებით შეცვალეთ მნიშვნელობა ველში {field}")
-            await session.commit()
-        else:
-            await message.answer(f"შეცდომა მოხდა მონაცემის ცვლილებისას, სცადეთ ხელახლდა")
+        await session.commit()

@@ -1,35 +1,32 @@
-from aiogram import Dispatcher, types
+from aiogram import Dispatcher, types, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from sqlalchemy.ext.asyncio import create_async_engine
 
-from app.database.models import DATABASE_URL, Car, SessionLocal
+from database.models import Car, SessionLocal
 from app.states import CarState
 
-dp = Dispatcher()
-
-engine = create_async_engine(DATABASE_URL, echo=True)
+router = Router()
 
 # /start command
-@dp.message(Command("start"))
+@router.message(Command("start"))
 async def start_command(message: types.Message):
     await message.answer("გამარჯობა! მე ვარ შენი ბოტი 🚀")
 
 # /add_car command
-@dp.message(Command("add_car"))
+@router.message(Command("add_car"))
 async def cmd_add_car(message: types.Message, state: FSMContext):
     await message.answer("ჩაწერეთ მანქანის მოდელი:")
     await state.set_state(CarState.model)
 
 # Process car model
-@dp.message(CarState.model)
+@router.message(CarState.model)
 async def process_model(message: types.Message, state: FSMContext):
     await state.update_data(model=message.text)
     await state.set_state(CarState.year)
     await message.answer("ჩაწერეთ მანქანის გამოშვების წელი:")
 
 # Process car year
-@dp.message(CarState.year)
+@router.message(CarState.year)
 async def process_year(message: types.Message, state: FSMContext):
     try:
         year = int(message.text)
@@ -44,28 +41,28 @@ async def process_year(message: types.Message, state: FSMContext):
     await message.answer("ჩაწერეთ მოყვანის თარიღი:")
 
 # Process arrival time
-@dp.message(CarState.arrival_time)
+@router.message(CarState.arrival_time)
 async def process_arrival(message: types.Message, state: FSMContext):
     await state.update_data(arrival_time=message.text)
     await state.set_state(CarState.departure_time)
     await message.answer("ჩაწერეთ გატანების თარიღი:")
 
 # Process departure time
-@dp.message(CarState.departure_time)
+@router.message(CarState.departure_time)
 async def process_departure(message: types.Message, state: FSMContext):
     await state.update_data(departure_time=message.text)
     await state.set_state(CarState.price_range)
     await message.answer("ჩაწერეთ ფასის დიაპაზონი:")
 
 # Process price range
-@dp.message(CarState.price_range)
+@router.message(CarState.price_range)
 async def process_price(message: types.Message, state: FSMContext):
     await state.update_data(price_range=message.text)
     await state.set_state(CarState.phone_number)
     await message.answer("ჩაწერეთ საკონტაქტო ტელეფონის ნომერი: +995")
 
 # Process phone number and save to DB
-@dp.message(CarState.phone_number)
+@router.message(CarState.phone_number)
 async def process_phone(message: types.Message, state: FSMContext):
     cleaned_text = message.text.replace(" ", "")
     if not cleaned_text.isdigit():
@@ -75,7 +72,7 @@ async def process_phone(message: types.Message, state: FSMContext):
     await message.answer("გთხოვთ ატვირთოთ მანქანის ფოტო 📸")
     await state.set_state(CarState.photo)
 
-@dp.message(CarState.photo)
+@router.message(CarState.photo)
 async def process_photo(message: types.Message, state: FSMContext):
     if not message.photo:
         await message.answer("გთხოვთ ატვირთოთ ფოტო 📸.")
