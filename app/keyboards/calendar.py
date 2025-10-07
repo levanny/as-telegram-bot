@@ -46,3 +46,61 @@ def generate_calendar(year:int, month:int):
     ])
 
     return types.InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+
+# /calendar that later will be integrated into /add 's choosing date part
+'''
+# @router.message(Command("calendar"))
+@dp.message(Command("calendar"))
+async def start_calendar(message: types.Message, state:FSMContext):
+    today = date.today()
+    await message.answer("აირჩიეთ მოყვანის თარიღი:",
+                         reply_markup=generate_calendar(today.year, today.month))
+    await state.set_state(DateRange.picking_start)
+
+#Handle date clicks
+@dp.callback_query(F.data.startswith("pick:"))
+async def handle_date(callback: types.CallbackQuery, state: FSMContext):
+    picked = date.fromisoformat(callback.data.split(":")[1])
+    current_state = await state.get_state()
+    if current_state == DateRange.picking_start:
+        await state.update_data(start=picked.isoformat())
+        await callback.message.edit_text(
+            f"მოყვანის თარიღი არჩეულია: {picked}\nაირჩიეთ წაყვანის თარიღი:",
+            reply_markup=generate_calendar(picked.year, picked.month)
+        )
+        await state.set_state(DateRange.picking_end)
+
+    elif current_state == DateRange.picking_end:
+        await state.update_data(end=picked.isoformat())
+        data = await state.get_data()
+
+        start_date = date.fromisoformat(data['start'])
+        end_date = date.fromisoformat(data['end'])
+        if data['start'] > data['end']:
+            temp = end_date
+            end_date = start_date
+            start_date = temp
+        await callback.message.edit_text(
+            f"შენ აირჩიე დიაპაზონი:\n{start_date} ➝ {end_date}"
+        )
+        await state.clear()
+
+    await callback.answer()
+
+#Handle navigation
+@dp.callback_query(F.data.startswith("nav:"))
+async def handle_nav(callback: types.CallbackQuery):
+    new_month = date.fromisoformat(callback.data.split(":")[1])
+    today = date.today()
+
+    # limit to current month + 3 months
+    if new_month < today.replace(day=1) or new_month >(today.replace(day=1) + timedelta(days=90)):
+        await callback.answer("ვიზიტის ჩანიშვნის ლიმიტი მხოლოდ მომდევნო 3 თვეა.")
+        return
+    await callback.message.edit_reply_markup(
+        reply_markup=generate_calendar(new_month.year, new_month.month)
+    )
+    await callback.answer()
+
+'''
