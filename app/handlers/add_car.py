@@ -84,6 +84,22 @@ async def process_phone(message: types.Message, state: FSMContext):
     await message.answer("გსურთ ატვირთოთ მანქანის ფოტო?", reply_markup=keyboard)
     await state.set_state(CarState.photo_choice)
 
+#function for saving a car to database
+async def save_car_to_db(data, message, session):
+    new_car = Car(**data)
+    session.add(new_car)
+    await session.commit()
+    await message.answer(
+        f"მანქანა წარმატებით დამატებულია!\n"
+        f"მოდელი: {data['model']}\n"
+        f"წელი: {data['year']}\n"
+        f"მოყვანის თარიღი: {data['arrival_time']}\n"
+        f"გატანების თარიღი: {data['departure_time']}\n"
+        f"საორიენტაციო ფასი: {data['price_range']}\n"
+        f"ტელეფონის ნომერი: {data['phone_number']}\n"
+        f"{'ფოტო ატვირთულია ✅' if 'photo_file_id' in data else 'ფოტო არ არის ატვირთული ❌'}"
+    )
+
 # Handle the user's choice
 @router.callback_query(lambda c: c.data in ["add_photo", "skip_photo"])
 async def photo_choice_handler(callback: types.CallbackQuery, state: FSMContext):
@@ -93,22 +109,8 @@ async def photo_choice_handler(callback: types.CallbackQuery, state: FSMContext)
     else:
         data = await state.get_data()
         async with SessionLocal() as session:
-            new_car = Car(**data)
-            session.add(new_car)
-            await session.commit()
-
-        await callback.message.answer(
-            f"მანქანა წარმატებით დამატებულია!\n"
-            f"მოდელი: {data['model']}\n"
-            f"წელი: {data['year']}\n"
-            f"მოყვანის თარიღი: {data['arrival_time']}\n"
-            f"გატანების თარიღი: {data['departure_time']}\n"
-            f"საორიენტაციო ფასი: {data['price_range']}\n"
-            f"ტელეფონის ნომერი: {data['phone_number']}\n"
-            f"ფოტო არ არის ატვირთული ❌"
-        )
+            await save_car_to_db(data, callback.message, session)
         await state.clear()
-
 
 # Process the photo if user chose to add
 @router.message(CarState.photo)
@@ -122,18 +124,5 @@ async def process_photo(message: types.Message, state: FSMContext):
 
     data = await state.get_data()
     async with SessionLocal() as session:
-        new_car = Car(**data)
-        session.add(new_car)
-        await session.commit()
-
-    await message.answer(
-        f"მანქანა წარმატებით დამატებულია!\n"
-        f"მოდელი: {data['model']}\n"
-        f"წელი: {data['year']}\n"
-        f"მოყვანის თარიღი: {data['arrival_time']}\n"
-        f"გატანების თარიღი: {data['departure_time']}\n"
-        f"საორიენტაციო ფასი: {data['price_range']}\n"
-        f"ტელეფონის ნომერი: {data['phone_number']}\n"
-        f"ფოტო ატვირთულია ✅"
-    )
+        await save_car_to_db(data, message, session)
     await state.clear()
