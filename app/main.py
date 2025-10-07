@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from aiogram import Bot, Dispatcher, Router
+from aiogram import Bot, Dispatcher
 
 from app.config import BOT_TOKEN
 from app.handlers import add_car, edit_car, list_car, delete_car, help_car
