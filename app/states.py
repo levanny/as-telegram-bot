@@ -18,6 +18,7 @@ class CarState(StatesGroup):
     price_range = State()
     phone_number = State()
     photo = State()
+    photo_choice = State()
 
 class DeleteCarState(StatesGroup):
     waiting_for_id = State()
