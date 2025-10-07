@@ -1,9 +1,11 @@
 from aiogram import Dispatcher, types, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from database.models import Car
 
-from database.models import Car, SessionLocal
 from app.states import CarState
+from database import SessionLocal
 
 router = Router()
 
@@ -13,7 +15,7 @@ async def start_command(message: types.Message):
     await message.answer("გამარჯობა! მე ვარ შენი ბოტი 🚀")
 
 # /add_car command
-@router.message(Command("add_car"))
+@router.message(Command("add"))
 async def cmd_add_car(message: types.Message, state: FSMContext):
     await message.answer("ჩაწერეთ მანქანის მოდელი:")
     await state.set_state(CarState.model)
@@ -68,15 +70,53 @@ async def process_phone(message: types.Message, state: FSMContext):
     if not cleaned_text.isdigit():
         await message.answer("გთხოვთ, ჩაწეროთ მხოლოდ ციფრები მაგალითად: 510 100 500.")
         return
-    await state.update_data(phone_number=message.text)
-    await message.answer("გთხოვთ ატვირთოთ მანქანის ფოტო 📸")
-    await state.set_state(CarState.photo)
 
+    await state.update_data(phone_number=message.text)
+
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="Yes 📸", callback_data="add_photo"),
+                InlineKeyboardButton(text="No ❌", callback_data="skip_photo")
+            ]
+        ]
+    )
+    await message.answer("გსურთ ატვირთოთ მანქანის ფოტო?", reply_markup=keyboard)
+    await state.set_state(CarState.photo_choice)
+
+# Handle the user's choice
+@router.callback_query(lambda c: c.data in ["add_photo", "skip_photo"])
+async def photo_choice_handler(callback: types.CallbackQuery, state: FSMContext):
+    if callback.data == "add_photo":
+        await state.set_state(CarState.photo)
+        await callback.message.answer("გთხოვთ ატვირთოთ მანქანის ფოტო 📸")
+    else:
+        data = await state.get_data()
+        async with SessionLocal() as session:
+            new_car = Car(**data)
+            session.add(new_car)
+            await session.commit()
+
+        await callback.message.answer(
+            f"მანქანა წარმატებით დამატებულია!\n"
+            f"მოდელი: {data['model']}\n"
+            f"წელი: {data['year']}\n"
+            f"მოყვანის თარიღი: {data['arrival_time']}\n"
+            f"გატანების თარიღი: {data['departure_time']}\n"
+            f"საორიენტაციო ფასი: {data['price_range']}\n"
+            f"ტელეფონის ნომერი: {data['phone_number']}\n"
+            f"ფოტო არ არის ატვირთული ❌"
+        )
+        await state.clear()
+
+
+# Process the photo if user chose to add
 @router.message(CarState.photo)
 async def process_photo(message: types.Message, state: FSMContext):
     if not message.photo:
         await message.answer("გთხოვთ ატვირთოთ ფოტო 📸.")
         return
+
     photo = message.photo[-1]
     await state.update_data(photo_file_id=photo.file_id)
 
