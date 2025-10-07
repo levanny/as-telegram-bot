@@ -1,15 +1,15 @@
 from aiogram.filters import Command
-from aiogram import types, Dispatcher
+from aiogram import types, Router
 
-dp = Dispatcher()
+router = Router()
 
-@dp.message(Command("help"))
+@router.message(Command("help"))
 async def help_command(message: types.Message):
     await message.answer(
         "ხელმისაწვდომი ბრძანებები:\n"
-        "/start - ბოტის დაწყება\n"
-        "/help - ამ დახმარების შეტყობინების ჩვენება\n"
-        "/add_car - ახალი მანქანის დამატება\n"
+        "/help - დამხმარე შეტყობინების ჩვენება\n"
+        "/add - ახალი მანქანის დამატება\n"
         "/list - ბაზაში არსებული მანქანების ჩამოთვლა\n"
-        "/edit_car - რათა შეცვალოთ მანქანის ნებისმიერი მონაცემი\n"
+        "/edit - ბაზაში მანქანის მონაცემების შეცვლა\n"
+        "/delete - ბაზაში რომელიმე მანქანის წაშლა\n"
     )
