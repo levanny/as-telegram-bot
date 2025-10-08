@@ -10,7 +10,7 @@ services:
     command: >
       sh -c "
         alembic upgrade head &&
-        python app/bot.py
+        python app/main.py
       "
     restart: unless-stopped
 
